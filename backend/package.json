@@ -1,0 +1,32 @@
+{
+  "name": "transsafe-backend",
+  "version": "1.0.0",
+  "description": "TransSafe Fleet Management Backend",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "db:seed": "node prisma/seed.js",
+    "db:sync-roles": "node scripts/sync-user-roles.mjs",
+    "db:reset-admin": "node scripts/reset-admin-password.mjs",
+    "db:sync-trip-features": "node scripts/sync-trip-driver-features.mjs",
+    "predev": "node scripts/sync-trip-driver-features.mjs && node scripts/sync-operational-enhancements.mjs && node sync-vehicle-user-history.mjs",
+    "prestart": "node scripts/sync-trip-driver-features.mjs && node scripts/sync-operational-enhancements.mjs && node sync-vehicle-user-history.mjs",
+    "db:sync-vehicle-history": "node sync-vehicle-user-history.mjs",
+    "db:sync-enhancements": "node scripts/sync-operational-enhancements.mjs"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.0.0",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "prisma": "^6.16.2",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}

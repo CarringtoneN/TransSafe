@@ -1,0 +1,17 @@
+Add these imports to frontend/src/routes/AppRoutes.jsx:
+
+import Operations from "../pages/Operations/Operations";
+import Trips from "../pages/Operations/Trips";
+import VehicleAllocation from "../pages/Operations/VehicleAllocation";
+import DriverAllocation from "../pages/Operations/DriverAllocation";
+import Manifest from "../pages/Operations/Manifest";
+import Monitoring from "../pages/Operations/Monitoring";
+
+Then add these routes inside the existing MainLayout route:
+
+<Route path="/operations" element={<Operations />} />
+<Route path="/trips" element={<Trips />} />
+<Route path="/vehicle-allocation" element={<VehicleAllocation />} />
+<Route path="/driver-allocation" element={<DriverAllocation />} />
+<Route path="/manifest" element={<Manifest />} />
+<Route path="/monitoring" element={<Monitoring />} />

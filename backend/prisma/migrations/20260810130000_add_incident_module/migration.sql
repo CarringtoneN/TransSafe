@@ -1,0 +1,27 @@
+CREATE TABLE `incident` (
+  `id` INTEGER NOT NULL AUTO_INCREMENT,
+  `vehicleId` INTEGER NOT NULL,
+  `driverId` INTEGER NULL,
+  `incidentDate` DATETIME(3) NOT NULL,
+  `incidentType` VARCHAR(191) NOT NULL,
+  `severity` VARCHAR(191) NOT NULL,
+  `location` VARCHAR(191) NOT NULL,
+  `description` VARCHAR(191) NOT NULL,
+  `injuries` INTEGER NOT NULL DEFAULT 0,
+  `estimatedCost` DECIMAL(10,2) NULL,
+  `policeReported` BOOLEAN NOT NULL DEFAULT false,
+  `reportedBy` VARCHAR(191) NOT NULL,
+  `status` VARCHAR(191) NOT NULL DEFAULT 'OPEN',
+  `attachmentName` VARCHAR(255) NULL,
+  `attachmentPath` VARCHAR(500) NULL,
+  `attachmentMimeType` VARCHAR(100) NULL,
+  `attachmentSize` INTEGER NULL,
+  `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updatedAt` DATETIME(3) NOT NULL,
+
+  INDEX `incident_vehicleId_idx`(`vehicleId`),
+  INDEX `incident_driverId_idx`(`driverId`),
+  PRIMARY KEY (`id`),
+  CONSTRAINT `incident_vehicleId_fkey` FOREIGN KEY (`vehicleId`) REFERENCES `vehicle`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `incident_driverId_fkey` FOREIGN KEY (`driverId`) REFERENCES `driver`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

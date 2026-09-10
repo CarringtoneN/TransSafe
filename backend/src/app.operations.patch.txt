@@ -1,0 +1,11 @@
+Add these imports near the top of backend/src/app.js:
+
+import tripRoutes from "./routes/tripRoutes.js";
+import operationsRoutes from "./routes/operationsRoutes.js";
+
+Then add these route registrations:
+
+app.use("/api/trips", tripRoutes);
+app.use("/api/operations", operationsRoutes);
+
+Do not remove your existing /api/vehicles, /api/drivers, /api/assignments, etc.

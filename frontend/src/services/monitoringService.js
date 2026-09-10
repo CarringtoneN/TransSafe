@@ -1,0 +1,1 @@
+import axios from "axios";const A="http://localhost:5000/api/monitoring";const d=r=>r.data.data;export default {getAll:async()=>d(await axios.get(A)),getById:async id=>d(await axios.get(`${A}/${id}`)),create:async x=>d(await axios.post(A,x)),update:async(id,x)=>d(await axios.put(`${A}/${id}`,x)),remove:async id=>(await axios.delete(`${A}/${id}`)).data};
