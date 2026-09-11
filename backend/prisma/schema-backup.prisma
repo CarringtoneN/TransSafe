@@ -1,0 +1,502 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model asset {
+  id                Int          @id @default(autoincrement())
+  assetTag          String       @unique
+  name              String
+  category          String
+  serialNumber      String?      @unique
+  purchaseDate      DateTime?
+  status            asset_status @default(ACTIVE)
+  notes             String?
+  assignedVehicleId Int?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  vehicle           vehicle?     @relation(fields: [assignedVehicleId], references: [id])
+
+  @@index([assignedVehicleId])
+}
+
+model driver {
+  id             Int           @id @default(autoincrement())
+  employeeNumber String        @unique
+  firstName      String
+  lastName       String
+  email          String?       @unique
+  phone          String?
+  licenseNumber  String        @unique
+  licenseExpiry  DateTime?
+  status         driver_status @default(ACTIVE)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  assignment     assignment[]
+  shift          shift[]
+  trip           trip[]
+  tripDriver     tripDriver[]
+  tripEvent      tripEvent[]
+  inspection     inspection[]
+  incident       incident[]
+  maintenanceSchedule maintenanceSchedule[]
+  compliance compliance[]
+  user user?
+}
+
+model maintenance {
+  id          Int      @id @default(autoincrement())
+  serviceType String
+  description String?
+  serviceDate DateTime
+  cost        Decimal  @db.Decimal(10, 2)
+  vehicleId   Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  vehicle     vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId])
+}
+
+model trip {
+  id            Int         @id @default(autoincrement())
+  origin        String
+  destination   String
+  departureTime DateTime
+  arrivalTime   DateTime?
+  distance      Float?
+  status        trip_status @default(SCHEDULED)
+  vehicleId     Int
+  driverId      Int
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  startOdometer Float?
+  endOdometer   Float?
+  actualDistance Float?
+  driver        driver      @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  vehicle       vehicle     @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  tripDriver    tripDriver[]
+  tripEvent     tripEvent[]
+
+  @@index([vehicleId])
+  @@index([driverId])
+}
+
+model tripDriver {
+  id            Int      @id @default(autoincrement())
+  tripId        Int
+  driverId      Int
+  startTime     DateTime
+  endTime       DateTime?
+  planned       Boolean  @default(false)
+  startLocation String?  @db.VarChar(255)
+  endLocation   String?  @db.VarChar(255)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  trip          trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  driver        driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@index([tripId, startTime])
+  @@index([driverId, startTime])
+}
+
+model tripEvent {
+  id         Int      @id @default(autoincrement())
+  tripId     Int
+  driverId   Int?
+  eventType  String   @db.VarChar(50)
+  eventTime  DateTime
+  location   String?  @db.VarChar(255)
+  stopName   String?  @db.VarChar(255)
+  notes      String?  @db.Text
+  createdAt  DateTime @default(now())
+  trip       trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  driver     driver?  @relation(fields: [driverId], references: [id], onDelete: SetNull)
+
+  @@index([tripId, eventTime])
+  @@index([driverId, eventTime])
+}
+
+model assignment {
+  id           Int       @id @default(autoincrement())
+  driverId     Int
+  vehicleId    Int
+  status       String    @default("ACTIVE")
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  assignedAt   DateTime
+  unassignedAt DateTime?
+  driver       driver    @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  vehicle      vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([driverId])
+  @@index([vehicleId])
+}
+
+model shift {
+  id         Int      @id @default(autoincrement())
+  driverId   Int
+  vehicleId  Int
+  shiftDate  DateTime
+  startTime  DateTime
+  endTime    DateTime
+  totalHours Float
+  status     String   @default("SCHEDULED")
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  driver     driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  vehicle    vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([driverId])
+  @@index([vehicleId])
+  @@index([shiftDate])
+}
+
+model document {
+  id           Int       @id @default(autoincrement())
+  documentName String
+  documentType String
+  issueDate    DateTime?
+  expiryDate   DateTime?
+  status       String    @default("VALID")
+  filePath     String?
+  notes        String?
+  vehicleId    Int
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  vehicle      vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId])
+}
+
+model inspection {
+  id               Int      @id @default(autoincrement())
+  vehicleId        Int
+  driverId         Int?
+  inspectionDate   DateTime
+  odometer         Float
+  brakes           Boolean  @default(true)
+  tyres            Boolean  @default(true)
+  lights           Boolean  @default(true)
+  engine           Boolean  @default(true)
+  battery          Boolean  @default(true)
+  oilLevel         Boolean  @default(true)
+  coolant          Boolean  @default(true)
+  mirrors          Boolean  @default(true)
+  windshield       Boolean  @default(true)
+  fireExtinguisher Boolean  @default(true)
+  firstAidKit      Boolean  @default(true)
+  overallStatus    String
+  inspectorName    String
+  remarks          String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  vehicle          vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  driver           driver?  @relation(fields: [driverId], references: [id])
+
+  @@index([vehicleId])
+  @@index([driverId])
+}
+
+model user {
+  id        Int       @id @default(autoincrement())
+  name      String
+  email     String    @unique
+  password  String
+  role      user_role @default(FLEET_MANAGER)
+  active    Boolean   @default(true)
+  workshop  String?
+  driverId  Int?      @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  driver    driver?   @relation(fields: [driverId], references: [id], onDelete: SetNull)
+
+  @@index([role])
+  @@index([active])
+}
+
+model vehicle {
+  id           Int            @id @default(autoincrement())
+  registration String         @unique
+  make         String
+  model        String
+  year         Int
+  status       vehicle_status @default(ACTIVE)
+  vin          String?
+  colour       String?
+  fuelType     String?
+  bodyType     String?
+  carryingCapacity Int?
+  currentMileage Float @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  asset        asset[]
+  assignment   assignment[]
+  document     document[]
+  fuelrecord   fuelrecord[]
+  maintenance  maintenance[]
+  shift        shift[]
+  trip         trip[]
+  inspection   inspection[]
+  incident     incident[]
+  maintenanceSchedule maintenanceSchedule[]
+  workOrder workOrder[]
+  repair repair[]
+  compliance compliance[]
+}
+
+model fuelrecord {
+  id        Int      @id @default(autoincrement())
+  vehicleId Int
+  fuelDate  DateTime
+  litres    Float
+  cost      Decimal  @db.Decimal(10, 2)
+  odometer  Float
+  station   String
+  receiptNo String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  vehicle   vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade, map: "fuelRecord_vehicleId_fkey")
+
+  @@index([vehicleId], map: "fuelRecord_vehicleId_idx")
+}
+
+enum user_role {
+  ADMIN
+  DISPATCHER
+  DRIVER
+  FLEET_MANAGER
+  OPERATIONS_MANAGER
+  MAINTENANCE_COMPLIANCE
+  TECHNICIAN_MECHANIC
+}
+
+enum vehicle_status {
+  ACTIVE
+  MAINTENANCE
+  OUT_OF_SERVICE
+}
+
+enum trip_status {
+  SCHEDULED
+  IN_PROGRESS
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum asset_status {
+  ACTIVE
+  IN_USE
+  MAINTENANCE
+  RETIRED
+}
+
+enum driver_status {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+model incident {
+  id             Int      @id @default(autoincrement())
+  vehicleId      Int
+  driverId       Int?
+  incidentDate   DateTime
+  incidentType   String
+  severity       String
+  location       String
+  description    String
+  injuries       Int      @default(0)
+  estimatedCost  Decimal? @db.Decimal(10, 2)
+  policeReported Boolean  @default(false)
+  reportedBy     String
+  status         String   @default("OPEN")
+  resolutionNotes String? @db.Text
+  resolvedAt DateTime?
+  resolvedBy String? @db.VarChar(150)
+  attachmentName String? @db.VarChar(255)
+  attachmentPath String? @db.VarChar(1000)
+  attachmentMimeType String? @db.VarChar(100)
+  attachmentSize Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  vehicle vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  driver  driver? @relation(fields: [driverId], references: [id])
+  workOrder workOrder[]
+
+  @@index([vehicleId])
+  @@index([driverId])
+}
+
+
+model maintenanceSchedule {
+  id Int @id @default(autoincrement())
+  scheduleNumber String @unique @db.VarChar(50)
+  vehicleId Int
+  assignedDriverId Int?
+  serviceType String @db.VarChar(100)
+  maintenanceCategory String @db.VarChar(100)
+  dueDate DateTime?
+  dueMileage Float?
+  scheduledDate DateTime
+  estimatedDurationHours Float?
+  priority String @default("MEDIUM")
+  reason String @db.VarChar(500)
+  description String @db.VarChar(5000)
+  assignedTechnician String? @db.VarChar(150)
+  assignedWorkshop String? @db.VarChar(150)
+  serviceLocation String? @db.VarChar(200)
+  requiredParts String? @db.VarChar(5000)
+  estimatedLabourHours Float?
+  estimatedPartsCost Decimal? @db.Decimal(12,2)
+  estimatedLabourCost Decimal? @db.Decimal(12,2)
+  estimatedTotalCost Decimal? @db.Decimal(12,2)
+  status String @default("SCHEDULED")
+  approvalStatus String @default("PENDING")
+  createdBy String @db.VarChar(150)
+  notes String? @db.VarChar(5000)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  vehicle vehicle @relation(fields:[vehicleId], references:[id], onDelete:Cascade)
+  assignedDriver driver? @relation(fields:[assignedDriverId], references:[id], onDelete:SetNull)
+  @@index([vehicleId])
+  @@index([assignedDriverId])
+  @@index([scheduledDate])
+  @@index([status])
+  @@map("maintenance_schedule")
+}
+
+model workOrder {
+  id Int @id @default(autoincrement())
+  workOrderNumber String @unique @db.VarChar(50)
+  dateCreated DateTime @default(now())
+  requestedBy String @db.VarChar(150)
+  department String @db.VarChar(100)
+  vehicleId Int
+  currentMileage Float?
+  maintenanceType String @db.VarChar(100)
+  workDescription String @db.VarChar(5000)
+  faultDescription String? @db.VarChar(5000)
+  requestedRepairs String? @db.VarChar(5000)
+  priority String @default("MEDIUM")
+  estimatedCompletionDate DateTime?
+  assignedTechnician String? @db.VarChar(150)
+  assignedWorkshop String? @db.VarChar(150)
+  supervisor String? @db.VarChar(150)
+  requiredSpareParts String? @db.VarChar(5000)
+  requiredTools String? @db.VarChar(5000)
+  estimatedLabourHours Float?
+  estimatedPartsCost Decimal? @db.Decimal(12,2)
+  estimatedLabourCost Decimal? @db.Decimal(12,2)
+  estimatedTotalCost Decimal? @db.Decimal(12,2)
+  status String @default("PENDING_APPROVAL")
+  actualCompletionDate DateTime?
+  technicianNotes String? @db.VarChar(5000)
+  finalCost Decimal? @db.Decimal(12,2)
+  managerApproval Boolean @default(false)
+  managerConfirmation Boolean @default(false)
+  incidentId Int?
+  incident incident? @relation(fields: [incidentId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  vehicle vehicle @relation(fields:[vehicleId], references:[id], onDelete:Cascade)
+  @@index([vehicleId])
+  @@index([status])
+  @@index([dateCreated])
+  @@index([incidentId])
+  @@map("work_order")
+}
+
+model repair {
+  id Int @id @default(autoincrement())
+  repairReference String @unique @db.VarChar(50)
+  vehicleId Int
+  faultReported String @db.VarChar(5000)
+  dateReported DateTime
+  reportedBy String @db.VarChar(150)
+  faultCategory String @db.VarChar(100)
+  severityLevel String @default("MEDIUM")
+  initialDiagnosis String? @db.VarChar(5000)
+  repairDate DateTime?
+  repairStartTime DateTime?
+  repairEndTime DateTime?
+  assignedTechnician String? @db.VarChar(150)
+  workshop String? @db.VarChar(150)
+  repairDescription String? @db.VarChar(5000)
+  rootCause String? @db.VarChar(5000)
+  correctiveActionTaken String? @db.VarChar(5000)
+  partsReplaced String? @db.VarChar(5000)
+  partNumbers String? @db.VarChar(5000)
+  quantityUsed Int?
+  supplier String? @db.VarChar(150)
+  unitCost Decimal? @db.Decimal(12,2)
+  totalPartsCost Decimal? @db.Decimal(12,2)
+  labourHours Float?
+  hourlyRate Decimal? @db.Decimal(12,2)
+  labourCost Decimal? @db.Decimal(12,2)
+  additionalCosts Decimal? @db.Decimal(12,2)
+  totalRepairCost Decimal? @db.Decimal(12,2)
+  vehicleTestConducted Boolean @default(false)
+  roadworthyStatus String @default("PENDING")
+  qualityInspectionResult String? @db.VarChar(5000)
+  technicianComments String? @db.VarChar(5000)
+  completionDate DateTime?
+  repairStatus String @default("IN_PROGRESS")
+  supportingDocuments String? @db.VarChar(5000)
+  beforePhotoUrl String? @db.VarChar(1000)
+  afterPhotoUrl String? @db.VarChar(1000)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  vehicle vehicle @relation(fields:[vehicleId], references:[id], onDelete:Cascade)
+  @@index([vehicleId])
+  @@index([repairStatus])
+  @@index([dateReported])
+  @@map("repair")
+}
+
+model compliance {
+  id Int @id @default(autoincrement())
+  vehicleId Int?
+  driverId Int?
+  itemType String @db.VarChar(100)
+  itemName String @db.VarChar(200)
+  issueDate DateTime?
+  expiryDate DateTime?
+  status String @default("COMPLIANT")
+  referenceNumber String? @db.VarChar(150)
+  notes String? @db.VarChar(5000)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  vehicle vehicle? @relation(fields:[vehicleId], references:[id], onDelete:Cascade)
+  driver driver? @relation(fields:[driverId], references:[id], onDelete:Cascade)
+  @@index([vehicleId])
+  @@index([driverId])
+  @@index([expiryDate])
+  @@index([status])
+  @@map("compliance")
+}
+
+
+model approvalRecord {
+  id Int @id @default(autoincrement())
+  entityType String @db.VarChar(50)
+  entityId Int
+  action String @db.VarChar(50)
+  approvedByUserId Int?
+  approvedByName String? @db.VarChar(150)
+  approvedAt DateTime @default(now())
+  notes String? @db.VarChar(2000)
+  @@index([entityType, entityId])
+  @@index([approvedAt])
+  @@map("approval_record")
+}
